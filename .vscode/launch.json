@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "AI Neuron GPU Run",
+      "request": "launch",
+      "mainClass": "Main",
+      "vmArgs": "-Djava.library.path=\"${workspaceFolder}\"",
+      "env": {
+        "PATH": "C:\\Program Files\\AMD\\ROCm\\7.1\\bin;${env:PATH}"
+      }
+    }
+  ]
+}
