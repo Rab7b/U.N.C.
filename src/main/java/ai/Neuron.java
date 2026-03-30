@@ -17,6 +17,17 @@ public class Neuron {
         this.weights = new double[inputSize+3][7];
         this.bias = new double[7];
         this.out = new double[outs];
+
+        if(inputSize > inputs.length){
+            inputSize = inputs.length;
+        }
+        if(outs > targets.length){
+            outs = targets.length;
+        }
+        if(inputs.length > 0){
+            System.arraycopy(inputs, 0, this.inputs, 0, inputSize);
+        }
+
         for (int i = 0; i < inputSize; i++) {
             for (int j = 0; j < 7; j++) {
                 this.weights[i][j] = Math.random() * 2 - 1;
@@ -28,14 +39,6 @@ public class Neuron {
         this.targets = targets;
         this.inputs = inputs;
         this.learningRate = learningRate;
-    }
-
-    public Neuron(int inputSize, double learningRate, double[] inputs, double[][] targets, int outs) {
-        this(inputSize, learningRate, inputs, (double[]) null, outs);
-        if (targets != null && targets.length > 0) {
-            this.targets = targets[0];
-
-        }
     }
 
     private native static double activate(double sum);
