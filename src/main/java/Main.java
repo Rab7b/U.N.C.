@@ -9,23 +9,23 @@ public class Main extends JPanel implements ActionListener {
     private int x1 = 100, y1 = 300;
     private int size = 50;
     private Timer timer;
-    
+
     private int tries;
     private long startTime;
     private final int TIME_LIMIT_MS = 20000;
     private final int GOAL_X = 1500;
 
     private Neuron[] neurons = {
-        new Neuron(2, new double[]{0.0, 0.0}, 0.01, 1),
-        new Neuron(2, new double[]{0.0, 0.0}, 0.01, 1)
+            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1),
+            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1)
     };
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
-        if(load("tries.txt") == 0){ 
+        if (load("tries.txt") == 0) {
             tries = 0;
-        } else{
+        } else {
             tries = load("tries.txt");
         }
         neurons[0].load("w_x.txt");
@@ -41,14 +41,15 @@ public class Main extends JPanel implements ActionListener {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
+
         g2d.setColor(Color.BLACK);
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
         g2d.drawString("Tries: " + tries, 20, 30);
-        
+
         long elapsed = System.currentTimeMillis() - startTime;
         double timeLeft = (TIME_LIMIT_MS - elapsed) / 1000.0;
-        if (timeLeft < 0) timeLeft = 0;
+        if (timeLeft < 0)
+            timeLeft = 0;
         g2d.drawString("Time Left: " + String.format("%.2f", timeLeft) + "s", 20, 60);
 
         g2d.setColor(new Color(46, 204, 113));
@@ -58,6 +59,10 @@ public class Main extends JPanel implements ActionListener {
         g2d.fillRect(x1, y1, size, size);
         g2d.setColor(Color.BLACK);
         g2d.drawRect(x1, y1, size, size);
+
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(950, 300, 15, 300);
+        g2d.drawRect(950, 300, 15, 300);
     }
 
     @Override
@@ -72,8 +77,19 @@ public class Main extends JPanel implements ActionListener {
         double predX = neurons[0].predict() * 1600.0;
         double predY = neurons[1].predict() * 600.0;
 
-        if (predX > x1) x1 += 4; else if (predX < x1) x1 -= 4;
-        if (predY > y1) y1 += 4; else if (predY < y1) y1 -= 4;
+        Rectangle player = new Rectangle(x1, y1, size, size);
+        Rectangle wall = new Rectangle(950, 300, 15, 300);
+
+        if (predX > x1) {
+            x1 += 4;
+        } else if (predX < x1) {
+            x1 -= 4;
+        }
+        if (predY > y1) {
+            y1 += 4;
+        } else if (predY < y1) {
+            y1 -= 4;
+        }
 
         double reward = 0;
         long currentTime = System.currentTimeMillis();
@@ -93,9 +109,14 @@ public class Main extends JPanel implements ActionListener {
             reward = (x1 / 1600.0) * 0.5;
         }
 
+        if (player.intersects(wall)) {
+            reward = -5.0;
+            reset = true; 
+        }
+
         neurons[0].train(1.0);
-        neurons[1].train(0.5); // Target middle of Y axis
-        
+        neurons[1].train(0.5);
+
         neurons[0].motivate(reward, 0.9, normX);
         neurons[1].motivate(reward, 0.9, normY);
 
@@ -105,8 +126,8 @@ public class Main extends JPanel implements ActionListener {
             y1 = 300;
             startTime = currentTime;
             if (tries % 10 == 0) {
-                 neurons[0].save("w_x.txt");
-                 neurons[1].save("w_y.txt");
+                neurons[0].save("w_x.txt");
+                neurons[1].save("w_y.txt");
             }
         }
         repaint();
@@ -119,7 +140,7 @@ public class Main extends JPanel implements ActionListener {
         frame.setSize(1600, 600);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
+
         frame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -135,15 +156,19 @@ public class Main extends JPanel implements ActionListener {
     static void save(String filename, int tries) {
         try (java.io.PrintWriter out = new java.io.PrintWriter(filename)) {
             out.println(tries);
-        } catch (java.io.IOException e) {}
+        } catch (java.io.IOException e) {
+        }
     }
 
     static int load(String filename) {
         java.io.File file = new java.io.File(filename);
-        if (!file.exists()) return 0;
+        if (!file.exists())
+            return 0;
         try (java.util.Scanner sc = new java.util.Scanner(file)) {
-            if (sc.hasNextInt()) return sc.nextInt();
-        } catch (java.io.IOException e) {}
+            if (sc.hasNextInt())
+                return sc.nextInt();
+        } catch (java.io.IOException e) {
+        }
         return 0;
     }
 }

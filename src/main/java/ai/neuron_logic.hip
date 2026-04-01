@@ -23,7 +23,9 @@ extern "C"
         int len = w.size();
         if (len < 1000) {
             double s = 0.0;
-            for (double val : w) s += val;
+            for (double val : w) {
+                s += val;
+            }
             return s;
         }
 
@@ -45,26 +47,23 @@ extern "C"
         return total_sum;
     }
 
-    JNIEXPORT jdouble JNICALL Java_ai_Neuron_activate(JNIEnv *env, jclass cls, jdouble x)
-    {
+    JNIEXPORT jdouble JNICALL Java_ai_Neuron_activate(JNIEnv *env, jclass cls, jdouble x) {
         return 1.0 / (1.0 + exp(-x));
     }
 
-    JNIEXPORT jdouble JNICALL Java_ai_Neuron_derivative(JNIEnv *env, jclass cls, jdouble x)
-    {
+    JNIEXPORT jdouble JNICALL Java_ai_Neuron_derivative(JNIEnv *env, jclass cls, jdouble x) {
         double s = 1.0 / (1.0 + exp(-x));
         return s * (1.0 - s);
     }
 
-    JNIEXPORT jdouble JNICALL Java_ai_Neuron_predict(JNIEnv *env, jobject obj)
-    {
+    JNIEXPORT jdouble JNICALL Java_ai_Neuron_predict(JNIEnv *env, jobject obj) {
         jclass cls = env->GetObjectClass(obj);
         jfieldID bF = env->GetFieldID(cls, "bias", "D");
         double b = env->GetDoubleField(obj, bF);
 
         jfieldID wF = env->GetFieldID(cls, "weights", "[D");
         jdoubleArray wA = (jdoubleArray)env->GetObjectField(obj, wF);
-        if (wA == NULL){
+        if (wA == NULL) {
             return 0.0;
         }
 
@@ -76,8 +75,8 @@ extern "C"
         s += b;
         return 1.0 / (1.0 + exp(-s));
     }
-    JNIEXPORT void JNICALL Java_ai_Neuron_train(JNIEnv *env, jobject obj, jdouble target)
-    {
+
+    JNIEXPORT void JNICALL Java_ai_Neuron_train(JNIEnv *env, jobject obj, jdouble target) {
         jclass cls = env->GetObjectClass(obj);
         jfieldID bF = env->GetFieldID(cls, "bias", "D");
         double b = env->GetDoubleField(obj, bF);
@@ -87,7 +86,9 @@ extern "C"
 
         jfieldID wF = env->GetFieldID(cls, "weights", "[D");
         jdoubleArray wA = (jdoubleArray)env->GetObjectField(obj, wF);
-        if (wA == NULL) return;
+        if (wA == NULL) {
+            return;
+        }
 
         jsize len = env->GetArrayLength(wA);
         std::vector<double> w(len);
@@ -118,8 +119,12 @@ extern "C"
                 bad_l = big_l = current_loyalty;
                 first = false;
             }
-            if (current_loyalty < bad_l) bad_l = current_loyalty;
-            if (current_loyalty > big_l) big_l = current_loyalty;
+            if (current_loyalty < bad_l) {
+                bad_l = current_loyalty;
+            }
+            if (current_loyalty > big_l) {
+                big_l = current_loyalty;
+            }
         }
 
         for (jsize i = 0; i < len; i++) {
@@ -130,8 +135,7 @@ extern "C"
         env->SetDoubleField(obj, bF, b);
     }
 
-    JNIEXPORT void JNICALL Java_ai_Neuron_motivate(JNIEnv *env, jobject obj, jdouble reward, jdouble gamma, jdouble state)
-    {
+    JNIEXPORT void JNICALL Java_ai_Neuron_motivate(JNIEnv *env, jobject obj, jdouble reward, jdouble gamma, jdouble state) {
         jclass cls = env->GetObjectClass(obj);
         jfieldID bF = env->GetFieldID(cls, "bias", "D");
         double b = env->GetDoubleField(obj, bF);
@@ -141,7 +145,9 @@ extern "C"
 
         jfieldID wF = env->GetFieldID(cls, "weights", "[D");
         jdoubleArray wA = (jdoubleArray)env->GetObjectField(obj, wF);
-        if (wA == NULL) return;
+        if (wA == NULL) {
+            return;
+        }
 
         jsize len = env->GetArrayLength(wA);
         std::vector<double> w(len);
@@ -151,15 +157,16 @@ extern "C"
         double trg = reward + gamma * state;
         double err = trg - out;
 
-        for (jsize i = 0; i < len; ++i) w[i] += lr * err;
+        for (jsize i = 0; i < len; ++i) {
+            w[i] += lr * err;
+        }
         b += lr * err;
 
         env->SetDoubleArrayRegion(wA, 0, len, w.data());
         env->SetDoubleField(obj, bF, b);
     }
 
-    JNIEXPORT void JNICALL Java_ai_Neuron_exportWeights(JNIEnv *env, jobject obj, jstring filename)
-    {
+    JNIEXPORT void JNICALL Java_ai_Neuron_exportWeights(JNIEnv *env, jobject obj, jstring filename) {
         const char *nm = env->GetStringUTFChars(filename, 0);
         jclass cls = env->GetObjectClass(obj);
 
@@ -178,15 +185,16 @@ extern "C"
         env->GetDoubleArrayRegion(wA, 0, len, w.data());
 
         std::ofstream f(nm);
-        for (jsize i = 0; i < len; ++i) f << w[i] << " ";
+        for (jsize i = 0; i < len; ++i) {
+            f << w[i] << " ";
+        }
         f << b << std::endl;
         f.close();
 
         env->ReleaseStringUTFChars(filename, nm);
     }
 
-    JNIEXPORT void JNICALL Java_ai_Neuron_importWeights(JNIEnv *env, jobject obj, jstring filename)
-    {
+    JNIEXPORT void JNICALL Java_ai_Neuron_importWeights(JNIEnv *env, jobject obj, jstring filename) {
         const char *nm = env->GetStringUTFChars(filename, 0);
         jclass cls = env->GetObjectClass(obj);
 
@@ -203,7 +211,9 @@ extern "C"
         
         std::ifstream f(nm);
         if (f.is_open()) {
-            for (jsize i = 0; i < len; ++i) f >> w[i];
+            for (jsize i = 0; i < len; ++i) {
+                f >> w[i];
+            }
             double b;
             f >> b;
             f.close();
