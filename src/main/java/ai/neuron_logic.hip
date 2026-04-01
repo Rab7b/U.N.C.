@@ -6,6 +6,7 @@
 #include <jni.h>
 #include <thread>
 #include <numeric>
+#include <map>
 
 extern "C"
 {
@@ -63,7 +64,9 @@ extern "C"
 
         jfieldID wF = env->GetFieldID(cls, "weights", "[D");
         jdoubleArray wA = (jdoubleArray)env->GetObjectField(obj, wF);
-        if (wA == NULL) return 0.0;
+        if (wA == NULL){
+            return 0.0;
+        }
 
         jsize len = env->GetArrayLength(wA);
         std::vector<double> w(len);
@@ -73,7 +76,6 @@ extern "C"
         s += b;
         return 1.0 / (1.0 + exp(-s));
     }
-
     JNIEXPORT void JNICALL Java_ai_Neuron_train(JNIEnv *env, jobject obj, jdouble target)
     {
         jclass cls = env->GetObjectClass(obj);
@@ -94,8 +96,35 @@ extern "C"
         double out = Java_ai_Neuron_predict(env, obj);
         double err = target - out;
 
-        for (jsize i = 0; i < len; ++i) w[i] += lr * err;
+        for (jsize i = 0; i < len; ++i) {
+            w[i] += lr * err;
+        }
         b += lr * err;
+
+        std::map<double, double> loyalties;
+        const double pi = 3.141592653589793;
+
+        for (jsize i = 0; i < len; i++) {
+            loyalties.insert(std::make_pair(w[i], w[i] * pi));
+        }
+
+        double bad_l = 0; 
+        double big_l = 0;
+        bool first = true;
+
+        for (jsize i = 0; i < len; i++) {
+            double current_loyalty = loyalties[w[i]];
+            if (first) {
+                bad_l = big_l = current_loyalty;
+                first = false;
+            }
+            if (current_loyalty < bad_l) bad_l = current_loyalty;
+            if (current_loyalty > big_l) big_l = current_loyalty;
+        }
+
+        for (jsize i = 0; i < len; i++) {
+            w[i] = w[i] * big_l * bad_l;
+        }
 
         env->SetDoubleArrayRegion(wA, 0, len, w.data());
         env->SetDoubleField(obj, bF, b);
