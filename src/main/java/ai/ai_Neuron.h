@@ -42,18 +42,10 @@ JNIEXPORT void JNICALL Java_ai_Neuron_train
 /*
  * Class:     ai_Neuron
  * Method:    motivate
- * Signature: (D[DD)V
+ * Signature: (DDD)V
  */
 JNIEXPORT void JNICALL Java_ai_Neuron_motivate
-  (JNIEnv *, jobject, jdouble, jdoubleArray, jdouble);
-
-/*
- * Class:     ai_Neuron
- * Method:    exportWeights
- * Signature: (Ljava/lang/String;[[D)V
- */
-JNIEXPORT void JNICALL Java_ai_Neuron_exportWeights
-  (JNIEnv *, jobject, jstring, jobjectArray);
+  (JNIEnv *, jobject, jdouble, jdouble, jdouble);
 
 /*
  * Class:     ai_Neuron
@@ -61,6 +53,14 @@ JNIEXPORT void JNICALL Java_ai_Neuron_exportWeights
  * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_ai_Neuron_importWeights
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     ai_Neuron
+ * Method:    exportWeights
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_ai_Neuron_exportWeights
   (JNIEnv *, jobject, jstring);
 
 #ifdef __cplusplus
