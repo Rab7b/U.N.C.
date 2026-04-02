@@ -6,7 +6,8 @@ import ai.Neuron;
 
 public class Main extends JPanel implements ActionListener {
 
-    private int x1 = 100, y1 = 300;
+    private double x1 = 100, y1 = 300;
+    private double angle = 0;
     private int size = 50;
     private Timer timer;
 
@@ -17,17 +18,14 @@ public class Main extends JPanel implements ActionListener {
 
     private Neuron[] neurons = {
             new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1),
-            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1)
+            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1) 
     };
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
-        if (load("tries.txt") == 0) {
-            tries = 0;
-        } else {
-            tries = load("tries.txt");
-        }
+        tries = load("tries.txt");
+
         neurons[0].load("w_x.txt");
         neurons[1].load("w_y.txt");
         this.startTime = System.currentTimeMillis();
@@ -47,83 +45,85 @@ public class Main extends JPanel implements ActionListener {
         g2d.drawString("Tries: " + tries, 20, 30);
 
         long elapsed = System.currentTimeMillis() - startTime;
-        double timeLeft = (TIME_LIMIT_MS - elapsed) / 1000.0;
-        if (timeLeft < 0)
-            timeLeft = 0;
+        double timeLeft = Math.max(0, (TIME_LIMIT_MS - elapsed) / 1000.0);
         g2d.drawString("Time Left: " + String.format("%.2f", timeLeft) + "s", 20, 60);
 
         g2d.setColor(new Color(46, 204, 113));
         g2d.fillRect(GOAL_X, 0, 15, getHeight());
 
-        g2d.setColor(new Color(52, 152, 219));
-        g2d.fillRect(x1, y1, size, size);
-        g2d.setColor(Color.BLACK);
-        g2d.drawRect(x1, y1, size, size);
-
         g2d.setColor(Color.BLACK);
         g2d.fillRect(950, 300, 15, 300);
-        g2d.drawRect(950, 300, 15, 300);
+
+        g2d.translate(x1 + size / 2, y1 + size / 2);
+        g2d.rotate(angle);
+
+        g2d.setColor(new Color(52, 152, 219));
+        g2d.fillRect(-size / 2, -size / 2, size, size);
+        g2d.setColor(Color.BLACK);
+        g2d.drawRect(-size / 2, -size / 2, size, size);
+
+        g2d.drawLine(0, 0, size / 2 + 10, 0);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
+
         double normX = x1 / 1600.0;
-        double normY = y1 / 600.0;
-        double[] inputs = { normX, normY };
+        double normAngle = (angle % (2 * Math.PI)) / (2 * Math.PI);
+
+        double[] inputs = { normX, normAngle };
 
         neurons[0].setInputs(inputs);
         neurons[1].setInputs(inputs);
 
-        double predX = neurons[0].predict() * 1600.0;
-        double predY = neurons[1].predict() * 600.0;
+        double prediction0 = neurons[0].predict();
+        double turnAction = (prediction0 - 0.5) * 0.2;
+        angle += turnAction;
 
-        Rectangle player = new Rectangle(x1, y1, size, size);
-        Rectangle wall = new Rectangle(950, 300, 15, 300);
+        // Нейрон 1: Скорость.
+        double prediction1 = neurons[1].predict();
+        double speed = prediction1 * 6.0; 
 
-        if (predX > x1) {
-            x1 += 4;
-        } else if (predX < x1) {
-            x1 -= 4;
-        }
-        if (predY > y1) {
-            y1 += 4;
-        } else if (predY < y1) {
-            y1 -= 4;
-        }
+        // Физика движения
+        x1 += Math.cos(angle) * speed;
+        y1 += Math.sin(angle) * speed;
 
         double reward = 0;
-        long currentTime = System.currentTimeMillis();
         boolean reset = false;
+        long currentTime = System.currentTimeMillis();
+        Rectangle player = new Rectangle((int) x1, (int) y1, size, size);
+        Rectangle wall = new Rectangle(950, 300, 15, 300);
 
         if (currentTime - startTime > TIME_LIMIT_MS) {
-            reward = -2.0;
+            reward = -2.0; 
             reset = true;
         } else if (x1 <= 0 || x1 >= 1600 || y1 <= 0 || y1 >= 600) {
-            reward = -1.0;
+            reward = -3.0; 
+            reset = true;
+        } else if (player.intersects(wall)) {
+            reward = -5.0; 
             reset = true;
         } else if (x1 >= GOAL_X) {
-            reward = 10.0;
-            System.out.println("GOAL REACHED! Try: " + tries);
+            reward = 20.0; // Победа!
+            System.out.println("GOAL! Tries: " + tries);
             reset = true;
         } else {
-            reward = (x1 / 1600.0) * 0.5;
+
+            double directionBonus = Math.cos(angle) > 0 ? 0.1 : -0.1;
+            reward = (x1 / 1600.0) + directionBonus;
         }
 
-        if (player.intersects(wall)) {
-            reward = -5.0;
-            reset = true; 
-        }
-
-        neurons[0].train(1.0);
-        neurons[1].train(0.5);
+        neurons[0].train(0.5);
+        neurons[1].train(1.0);
 
         neurons[0].motivate(reward, 0.9, normX);
-        neurons[1].motivate(reward, 0.9, normY);
+        neurons[1].motivate(reward, 0.9, normAngle);
 
         if (reset) {
             save("tries.txt", ++tries);
             x1 = 100;
             y1 = 300;
+            angle = 0;
             startTime = currentTime;
             if (tries % 10 == 0) {
                 neurons[0].save("w_x.txt");
@@ -134,7 +134,7 @@ public class Main extends JPanel implements ActionListener {
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("@AI_Playground_XY_Line");
+        JFrame frame = new JFrame("@AI_Playground_real");
         Main panel = new Main();
         frame.add(panel);
         frame.setSize(1600, 600);

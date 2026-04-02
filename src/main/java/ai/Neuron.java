@@ -10,8 +10,9 @@ public class Neuron {
     private double[] weights, inputs;
     private double bias;
     private double learningRate = 0.0;
+    private Neuron[] peers;
 
-    public Neuron(int inputSize, double[] inputs, double learningRate, int layerSize) {
+    public Neuron(int inputSize, double[] inputs, double learningRate, int layerSize, Neuron[] peers) {
         this.learningRate = learningRate;
         this.layerSize = layerSize;
         this.weights = new double[inputSize * layerSize];
@@ -22,6 +23,7 @@ public class Neuron {
         }
         this.bias = 0.0;
         this.inputs = inputs;
+        this.peers = peers;
     }
 
     private static native double activate(double x);

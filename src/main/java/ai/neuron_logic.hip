@@ -78,6 +78,26 @@ extern "C"
 
     JNIEXPORT void JNICALL Java_ai_Neuron_train(JNIEnv *env, jobject obj, jdouble target) {
         jclass cls = env->GetObjectClass(obj);
+    
+        jfieldID peersF = env->GetFieldID(cls, "peers", "[Lai/Neuron;");
+        jobjectArray peersA = (jobjectArray)env->GetObjectField(obj, peersF);
+    
+        double collectiveError = 0.0;
+        if (peersA != NULL) {
+            jsize peerCount = env->GetArrayLength(peersA);
+            double totalPeerOut = 0.0;
+
+            for (int i = 0; i < peerCount; i++) {
+                jobject peer = env->GetObjectArrayElement(peersA, i);
+                jclass peerCls = env->GetObjectClass(peer);
+                jmethodID predictID = env->GetMethodID(peerCls, "predict", "()D");
+                totalPeerOut += env->CallDoubleMethod(peer, predictID);
+            }
+        
+            double avgPeerOut = totalPeerOut / (double)peerCount;
+            collectiveError = target - avgPeerOut;
+        }
+
         jfieldID bF = env->GetFieldID(cls, "bias", "D");
         double b = env->GetDoubleField(obj, bF);
 
@@ -94,13 +114,15 @@ extern "C"
         std::vector<double> w(len);
         env->GetDoubleArrayRegion(wA, 0, len, w.data());
 
-        double out = Java_ai_Neuron_predict(env, obj);
-        double err = target - out;
+        double myOut = Java_ai_Neuron_predict(env, obj);
+        double myError = target - myOut;
+
+        double delta = (peersA != NULL) ? (myError - collectiveError) : myError;
 
         for (jsize i = 0; i < len; ++i) {
-            w[i] += lr * err;
+            w[i] += lr * delta;
         }
-        b += lr * err;
+        b += lr * delta;
 
         std::map<double, double> loyalties;
         const double pi = 3.141592653589793;
