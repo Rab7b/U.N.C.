@@ -16,15 +16,17 @@ public class Main extends JPanel implements ActionListener {
     private final int TIME_LIMIT_MS = 20000;
     private final int GOAL_X = 1500;
 
-    private Neuron[] neurons = {
-            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1),
-            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1) 
-    };
+    private Neuron[] neurons;
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
         tries = load("tries.txt");
+
+        neurons = new Neuron[] {
+            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1, neurons),
+            new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1, neurons)
+        };
 
         neurons[0].load("w_x.txt");
         neurons[1].load("w_y.txt");
