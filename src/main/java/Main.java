@@ -21,15 +21,15 @@ public class Main extends JPanel implements ActionListener {
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
-        tries = load("tries.txt");
+        tries = load("data/tries.txt");
 
         neurons = new Neuron[] {
             new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1, neurons),
             new Neuron(2, new double[] { 0.0, 0.0 }, 0.01, 1, neurons)
         };
 
-        neurons[0].load("w_x.txt");
-        neurons[1].load("w_y.txt");
+        neurons[0].load("data/w_x.txt");
+        neurons[1].load("data/w_y.txt");
         this.startTime = System.currentTimeMillis();
 
         timer = new Timer(20, this);
@@ -122,14 +122,14 @@ public class Main extends JPanel implements ActionListener {
         neurons[1].motivate(reward, 0.9, normAngle);
 
         if (reset) {
-            save("tries.txt", ++tries);
+            save("data/tries.txt", ++tries);
             x1 = 100;
             y1 = 300;
             angle = 0;
             startTime = currentTime;
             if (tries % 10 == 0) {
-                neurons[0].save("w_x.txt");
-                neurons[1].save("w_y.txt");
+                neurons[0].save("data/w_x.txt");
+                neurons[1].save("data/w_y.txt");
             }
         }
         repaint();
