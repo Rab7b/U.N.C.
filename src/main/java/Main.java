@@ -6,33 +6,37 @@ import ai.Neuron;
 
 public class Main extends JPanel implements ActionListener {
 
-    private double x1 = 100, y1 = 300;
-    private double angle = 0;
+    private double x1 = 100, y1 = 200;
+    private Neuron[] neuronsBlue;
+    private double x2 = 100, y2 = 500;
+    private Neuron[] neuronsRed;
+
     private int size = 50;
     private Timer timer;
-
     private int tries;
     private long startTime;
-    private final int TIME_LIMIT_MS = 30000;
+    private final int TIME_LIMIT_MS = 20000;
     private final int GOAL_X = 1500;
-
-    private Neuron[] neurons;
+    private final Rectangle wall = new Rectangle(950, 550, 100, 300);
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
-        this.tries = load("tries.txt");
+        this.tries = load("data/dtries.txt");
 
-        this.neurons = new Neuron[3];
-        this.neurons[0] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neurons);
-        this.neurons[1] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neurons);
-        this.neurons[2] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neurons);
+        this.neuronsBlue = new Neuron[2];
+        this.neuronsBlue[0] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neuronsBlue);
+        this.neuronsBlue[1] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neuronsBlue);
+        this.neuronsBlue[0].load("data/blue_w_x.txt");
+        this.neuronsBlue[1].load("data/blue_w_y.txt");
 
-        this.neurons[0].load("w_x.txt");
-        this.neurons[1].load("w_y.txt");
-        this.neurons[2].load("w_speed.txt");
+        this.neuronsRed = new Neuron[2];
+        this.neuronsRed[0] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neuronsRed);
+        this.neuronsRed[1] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 10, neuronsRed);
+        this.neuronsRed[0].load("data/red_w_x.txt");
+        this.neuronsRed[1].load("data/red_w_y.txt");
+
         this.startTime = System.currentTimeMillis();
-
         this.timer = new Timer(20, this);
         this.timer.start();
     }
@@ -46,7 +50,6 @@ public class Main extends JPanel implements ActionListener {
         g2d.setColor(Color.BLACK);
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
         g2d.drawString("Tries: " + tries, 20, 30);
-
         long elapsed = System.currentTimeMillis() - startTime;
         double timeLeft = Math.max(0, (TIME_LIMIT_MS - elapsed) / 1000.0);
         g2d.drawString("Time Left: " + String.format("%.2f", timeLeft) + "s", 20, 60);
@@ -55,87 +58,128 @@ public class Main extends JPanel implements ActionListener {
         g2d.fillRect(GOAL_X, 0, 15, getHeight());
 
         g2d.setColor(Color.BLACK);
-        g2d.fillRect(950, 300, 15, 300);
-
-        g2d.translate(x1 + size / 2.0, y1 + size / 2.0);
-        g2d.rotate(angle);
+        g2d.fillRect(wall.x, wall.y, wall.width, wall.height);
 
         g2d.setColor(new Color(52, 152, 219));
-        g2d.fillRect(-size / 2, -size / 2, size, size);
+        g2d.fillRect((int) x1, (int) y1, size, size);
         g2d.setColor(Color.BLACK);
-        g2d.drawRect(-size / 2, -size / 2, size, size);
-        g2d.drawLine(0, 0, size / 2 + 10, 0);
+        g2d.drawRect((int) x1, (int) y1, size, size);
+
+        g2d.setColor(new Color(231, 76, 60));
+        g2d.fillRect((int) x2, (int) y2, size, size);
+        g2d.setColor(Color.BLACK);
+        g2d.drawRect((int) x2, (int) y2, size, size);
+    }
+
+    private void updateAgent(int id) {
+        double curX = (id == 1) ? x1 : x2;
+        double curY = (id == 1) ? y1 : y2;
+        Neuron[] curNeurons = (id == 1) ? neuronsBlue : neuronsRed;
+
+        double normX = curX / 1600.0;
+        double normY = curY / 600.0;
+        Rectangle lookAhead = new Rectangle((int) curX + 60, (int) curY, size, size);
+        double wallAhead = lookAhead.intersects(wall) ? 1.0 : 0.0;
+
+        curNeurons[0].setInputs(new double[] { normX, normY, wallAhead });
+        curNeurons[1].setInputs(new double[] { normX, normY, wallAhead });
+
+        double moveX = curNeurons[0].predict() * 12.0;
+        double moveY = (curNeurons[1].predict() - 0.5) * 12.0;
+
+        if (id == 1) {
+            x1 += moveX;
+            y1 += moveY;
+        } else {
+            x2 += moveX;
+            y2 += moveY;
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        double sensorRange = 150.0;
-        double rayX = x1 + Math.cos(angle) * sensorRange;
-        double rayY = y1 + Math.sin(angle) * sensorRange;
-        double wallSeen = (rayX >= 950 && rayX <= 965 && rayY >= 300 && rayY <= 600) ? 1.0 : 0.0;
+        updateAgent(1);
+        updateAgent(2);
 
-        double normX = x1 / 1600.0;
-        double normAngle = (angle % (2 * Math.PI)) / (2 * Math.PI);
-        double[] inputs = { normX, normAngle, wallSeen };
+        Rectangle p1 = new Rectangle((int) x1, (int) y1, size, size);
+        Rectangle p2 = new Rectangle((int) x2, (int) y2, size, size);
 
-        neurons[0].setInputs(inputs);
-        neurons[1].setInputs(inputs);
-        neurons[2].setInputs(inputs);
+        double reward1 = calculateReward(x1, y1, p1);
+        double reward2 = calculateReward(x2, y2, p2);
 
-        double turnAction = (neurons[0].predict() - 0.5) * 0.15;
-        angle += turnAction;
+        neuronsBlue[0].train(0.5);
+        neuronsBlue[1].train(1.0);
+        neuronsBlue[0].motivate(reward1, 0.9, x1 / 1600.0);
+        neuronsBlue[1].motivate(reward1, 0.9, y1 / 600.0);
 
-        double speed = neurons[2].predict() * 8.0;
+        neuronsRed[0].train(0.5);
+        neuronsRed[1].train(1.0);
+        neuronsRed[0].motivate(reward2, 0.9, x2 / 1600.0);
+        neuronsRed[1].motivate(reward2, 0.9, y2 / 600.0);
 
-        x1 += Math.cos(angle) * speed;
-        y1 += Math.sin(angle) * speed;
-
-        double reward = 0;
         boolean reset = false;
         long currentTime = System.currentTimeMillis();
-        Rectangle player = new Rectangle((int) x1, (int) y1, size, size);
-        Rectangle wall = new Rectangle(950, 300, 15, 300);
 
-        if (currentTime - startTime > TIME_LIMIT_MS) {
-            reward = -2.0;
+        if (currentTime - startTime > TIME_LIMIT_MS || p1.intersects(wall) || p2.intersects(wall) || x1 >= GOAL_X || x2 >= GOAL_X) {
             reset = true;
-        } else if (x1 <= 0 || x1 >= 1600 || y1 <= 0 || y1 >= 600) {
-            reward = -4.0;
-            reset = true;
-        } else if (player.intersects(wall)) {
-            reward = -10.0;
-            reset = true;
-        } else if (x1 >= GOAL_X) {
-            reward = 50.0;
-            reset = true;
-        } else {
-            double progress = (x1 / 1600.0) * 2.0;
-            double spinPenalty = Math.abs(turnAction) * 2.0;
-            double straightBonus = (wallSeen > 0 && Math.abs(turnAction) < 0.05) ? 0.5 : 0.0;
-            reward = progress - spinPenalty + straightBonus;
         }
 
-        neurons[0].train(0.5);
-        neurons[1].train(1.0);
-        neurons[2].train(1.0);
-
-        neurons[0].motivate(reward, 0.9, normX);
-        neurons[1].motivate(reward, 0.9, normAngle);
-        neurons[2].motivate(reward, 0.9, wallSeen);
+        if(p1.intersects(wall)){
+            x1 = 100;
+            y1 = 200;
+            reward1 = -20.0;
+        }
+        if(p2.intersects(wall)){
+            x2 = 100;
+            y2 = 500;
+            reward2 = -20.0;
+        }
+        if(p1.intersects(p2)){
+            reset = true;
+            reward1 = -10.0;
+            reward2 = -10.0;
+            y1 = 200;
+            y2 = 500;
+            x1 = 100;
+            x2 = 100;
+        }
 
         if (reset) {
             save("data/tries.txt", ++tries);
-            x1 = 100;
-            y1 = 300;
-            angle = 0;
+            if (x1 >= GOAL_X) {
+                neuronsBlue[0].motivate(100, 0.9, x1 / 1600.0);
+                neuronsBlue[1].motivate(100, 0.9, y1 / 600.0);
+                neuronsRed[0].motivate(-100, 0.9, x2 / 1600.0);
+                neuronsRed[1].motivate(-100, 0.9, y2 / 600.0);
+                x1 = 100;
+                y1 = 200;
+            } else if (x2 >= GOAL_X) {
+                neuronsBlue[0].motivate(-100, 0.9, x1 / 1600.0);
+                neuronsBlue[1].motivate(-100, 0.9, y1 / 600.0);
+                neuronsRed[0].motivate(100, 0.9, x2 / 1600.0);
+                neuronsRed[1].motivate(100, 0.9, y2 / 600.0);
+                x2 = 100;
+                y2 = 500;
+            }
             startTime = currentTime;
-            if (tries % 10 == 0) {
-                neurons[0].save("w_x.txt");
-                neurons[1].save("w_y.txt");
-                neurons[2].save("w_speed.txt");
+            if (tries % 5 == 0) {
+                neuronsBlue[0].save("data/blue_w_x.txt");
+                neuronsBlue[1].save("data/blue_w_y.txt");
+                neuronsRed[0].save("data/red_w_x.txt");
+                neuronsRed[1].save("data/red_w_y.txt");
             }
         }
         repaint();
+    }
+
+    private double calculateReward(double x, double y, Rectangle p) {
+        if (p.intersects(wall))
+            return -20.0;
+        if (x >= GOAL_X)
+            return 100.0;
+        double progress = (x / 1600.0) * 5.0;
+        double yPenalty = Math.abs(y - 200) / 200.0;
+        return progress - yPenalty;
     }
 
     public static void main(String[] args) {
@@ -145,23 +189,12 @@ public class Main extends JPanel implements ActionListener {
         frame.setSize(1600, 600);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        frame.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                panel.neurons[0].save("w_x.txt");
-                panel.neurons[1].save("w_y.txt");
-                panel.neurons[2].save("w_speed.txt");
-                save("tries.txt", panel.tries);
-                System.exit(0);
-            }
-        });
         frame.setVisible(true);
     }
 
-    static void save(String filename, int tries) {
+    static void save(String filename, int val) {
         try (java.io.PrintWriter out = new java.io.PrintWriter(filename)) {
-            out.println(tries);
+            out.println(val);
         } catch (java.io.IOException e) {
         }
     }

@@ -48,12 +48,12 @@ extern "C"
     }
 
     JNIEXPORT jdouble JNICALL Java_ai_Neuron_activate(JNIEnv *env, jclass cls, jdouble x) {
-        return 1.0 / (1.0 + exp(-x));
+        double ex = std::exp(x);
+        return ex / (ex + 1.0);
     }
 
     JNIEXPORT jdouble JNICALL Java_ai_Neuron_derivative(JNIEnv *env, jclass cls, jdouble x) {
-        double s = 1.0 / (1.0 + exp(-x));
-        return s * (1.0 - s);
+        return x * (1.0 - x);
     }
 
     JNIEXPORT jdouble JNICALL Java_ai_Neuron_predict(JNIEnv *env, jobject obj) {
@@ -117,7 +117,11 @@ extern "C"
         double myOut = Java_ai_Neuron_predict(env, obj);
         double myError = target - myOut;
 
-        double delta = (peersA != NULL) ? (myError - collectiveError) : myError;
+        double derivative = 1.0 - (activatedValue * activatedValue);
+
+        double errorSignal = (peersA != NULL) ? (myError - collectiveError) : myError;
+
+        double delta = errorSignal * derivative;
 
         for (jsize i = 0; i < len; ++i) {
             w[i] += lr * delta;
