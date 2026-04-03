@@ -17,14 +17,13 @@ public class Main extends JPanel implements ActionListener {
     private long startTime;
     private final int TIME_LIMIT_MS = 20000;
     private final int GOAL_X = 1500;
-    private final Rectangle wall = new Rectangle(950, 450, 100, 300);
+    private final Rectangle wall = new Rectangle(950, 600, 100, 450);
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
         this.tries = load("data/dtries.txt");
 
-        // Исправлено: 2 нейрона (X и Y), 3 входа (соответствует updateAgent)
         this.neuronsBlue = new Neuron[2];
         for(int i = 0; i < 2; i++) {
             this.neuronsBlue[i] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 7, neuronsBlue);
@@ -169,7 +168,7 @@ public class Main extends JPanel implements ActionListener {
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("@AI_Playground_Battle");
+        JFrame frame = new JFrame("@AI_Playground_UNC");
         Main panel = new Main();
         frame.add(panel);
         frame.setSize(1600, 600);
