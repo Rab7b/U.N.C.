@@ -111,6 +111,16 @@ public class Main extends JPanel implements ActionListener {
         boolean reset = false;
         long currentTime = System.currentTimeMillis();
 
+        neuronsBlue[0].train(0.5);
+        neuronsBlue[1].train(1.0);
+        neuronsBlue[0].motivate(reward1, 0.9, x1 / 1600.0);
+        neuronsBlue[1].motivate(reward1, 0.9, y1 / 600.0);
+
+        neuronsRed[0].train(0.5);
+        neuronsRed[1].train(1.0);
+        neuronsRed[0].motivate(reward2, 0.9, x2 / 1600.0);
+        neuronsRed[1].motivate(reward2, 0.9, y2 / 600.0);
+
         if (p1.intersects(wall)) {
             reward1 = -20.0;
             x1 = 100;
@@ -145,16 +155,6 @@ public class Main extends JPanel implements ActionListener {
             x2 = 100; 
             y2 = 500; 
         }
-
-        neuronsBlue[0].train(0.5);
-        neuronsBlue[1].train(1.0);
-        neuronsBlue[0].motivate(reward1, 0.9, x1 / 1600.0);
-        neuronsBlue[1].motivate(reward1, 0.9, y1 / 600.0);
-
-        neuronsRed[0].train(0.5);
-        neuronsRed[1].train(1.0);
-        neuronsRed[0].motivate(reward2, 0.9, x2 / 1600.0);
-        neuronsRed[1].motivate(reward2, 0.9, y2 / 600.0);
 
         if (reset) {
             save("data/dtries.txt", ++tries);
