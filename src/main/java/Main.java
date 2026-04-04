@@ -200,7 +200,7 @@ public class Main extends JPanel implements ActionListener {
     }
 
     public static void main(String[] args) {
-        JFrame f = new JFrame("AI Playground Full HD");
+        JFrame f = new JFrame("AI_Playground_UNC");
         Main p = new Main();
         f.add(p);
         f.setSize(1920, 1080);
