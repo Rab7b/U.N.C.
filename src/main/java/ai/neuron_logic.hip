@@ -19,7 +19,7 @@ extern "C"
     }
 
     double get_multithreaded_sum(const std::vector<double>& w) {
-        const int num_threads = 8;
+        const int num_threads = ;
         int len = w.size();
         if (len < 1000) {
             double s = 0.0;

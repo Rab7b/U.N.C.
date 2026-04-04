@@ -17,19 +17,19 @@ public class Main extends JPanel implements ActionListener {
     private long startTime;
     private final int TIME_LIMIT_MS = 20000;
     private final int GOAL_X = 1500;
-    private final Rectangle wall = new Rectangle(950, 600, 100, 450);
+    private final Rectangle wall = new Rectangle(950, 650, 100, 400);
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(Color.WHITE);
         this.tries = load("data/dtries.txt");
 
-        this.neuronsBlue = new Neuron[2];
-        for(int i = 0; i < 2; i++) {
+        this.neuronsBlue = new Neuron[100];
+        for (int i = 0; i < 100; i++) {
+
             this.neuronsBlue[i] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 7, neuronsBlue);
+            this.neuronsBlue[i].load("data/blue_w_x.txt");
         }
-        this.neuronsBlue[0].load("data/blue_w_x.txt");
-        this.neuronsBlue[1].load("data/blue_w_y.txt");
 
         this.neuronsRed = new Neuron[2];
         this.neuronsRed[0] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 1, neuronsRed);
@@ -85,7 +85,7 @@ public class Main extends JPanel implements ActionListener {
         curNeurons[0].setInputs(new double[] { normX, normY, wallAhead });
         curNeurons[1].setInputs(new double[] { normX, normY, wallAhead });
 
-        double moveX = Math.max(0, curNeurons[0].predict() * 12.0); // Чтобы не пятились назад
+        double moveX = curNeurons[0].predict() * 12.0;
         double moveY = (curNeurons[1].predict() - 0.5) * 12.0;
 
         if (id == 1) {
@@ -111,16 +111,39 @@ public class Main extends JPanel implements ActionListener {
         boolean reset = false;
         long currentTime = System.currentTimeMillis();
 
-        if (p1.intersects(wall)) { reward1 = -30.0; x1 = 100; y1 = 200; }
-        if (p2.intersects(wall)) { reward2 = -30.0; x2 = 100; y2 = 500; }
-        
+        if (p1.intersects(wall)) {
+            reward1 = -20.0;
+            x1 = 100;
+            y1 = 200;
+            reward2 = 20.0;
+        }
+        if (p2.intersects(wall)) {
+            reward2 = -20.0;
+            x2 = 100;
+            y2 = 500;
+            reward1 = 20.0;
+        }
+
         if (p1.intersects(p2)) {
-            reward1 = -15.0; reward2 = -15.0;
+            reward1 = -10.0;
+            reward2 = -10.0;
             reset = true;
         }
 
         if (currentTime - startTime > TIME_LIMIT_MS || x1 >= GOAL_X || x2 >= GOAL_X) {
             reset = true;
+        }
+
+        if (y1 < 0 || y1 > 600 - size) {
+            reward1 = -10.0;
+            x1 = 100; 
+            y1 = 200;
+        }
+
+        if (y2 < 0 || y2 > 600 - size) {
+            reward2 = -10.0;
+            x2 = 100; 
+            y2 = 500; 
         }
 
         neuronsBlue[0].train(0.5);
@@ -146,8 +169,10 @@ public class Main extends JPanel implements ActionListener {
                 neuronsRed[0].motivate(100, 0.9, x2 / 1600.0);
                 neuronsRed[1].motivate(100, 0.9, y2 / 600.0);
             }
-            x1 = 100; y1 = 200;
-            x2 = 100; y2 = 500;
+            x1 = 100;
+            y1 = 200;
+            x2 = 100;
+            y2 = 500;
             startTime = currentTime;
             if (tries % 5 == 0) {
                 neuronsBlue[0].save("data/blue_w_x.txt");
@@ -160,15 +185,17 @@ public class Main extends JPanel implements ActionListener {
     }
 
     private double calculateReward(double x, double y, Rectangle p, int targetY) {
-        if (p.intersects(wall)) return -20.0;
-        if (x >= GOAL_X) return 100.0;
+        if (p.intersects(wall))
+            return -20.0;
+        if (x >= GOAL_X)
+            return 100.0;
         double progress = (x / 1600.0) * 5.0;
         double yPenalty = Math.abs(y - targetY) / 300.0;
         return progress - yPenalty;
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("@AI_Playground_UNC");
+        JFrame frame = new JFrame("@AI_Playground_real");
         Main panel = new Main();
         frame.add(panel);
         frame.setSize(1600, 600);
@@ -180,15 +207,19 @@ public class Main extends JPanel implements ActionListener {
     static void save(String filename, int val) {
         try (java.io.PrintWriter out = new java.io.PrintWriter(filename)) {
             out.println(val);
-        } catch (java.io.IOException e) {}
+        } catch (java.io.IOException e) {
+        }
     }
 
     static int load(String filename) {
         java.io.File file = new java.io.File(filename);
-        if (!file.exists()) return 0;
+        if (!file.exists())
+            return 0;
         try (java.util.Scanner sc = new java.util.Scanner(file)) {
-            if (sc.hasNextInt()) return sc.nextInt();
-        } catch (java.io.IOException e) {}
+            if (sc.hasNextInt())
+                return sc.nextInt();
+        } catch (java.io.IOException e) {
+        }
         return 0;
     }
 }
