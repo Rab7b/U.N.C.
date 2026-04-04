@@ -6,7 +6,7 @@ import ai.Neuron;
 
 public class Main extends JPanel implements ActionListener {
 
-    private double x1 = 100, y1 = 400;
+    private double x1 = 100, y1 = 300;
     private Neuron[] neuronsBlue;
     private double x2 = 100, y2 = 700;
     private Neuron[] neuronsRed;
@@ -17,29 +17,27 @@ public class Main extends JPanel implements ActionListener {
     private long startTime;
     private final int TIME_LIMIT_MS = 25000;
     private final int GOAL_X = 1800;
-    private final Rectangle wall = new Rectangle(1100, 400, 120, 600);
+    private final Rectangle wall = new Rectangle(1000, 350, 150, 400);
 
     public Main() {
         this.setFocusable(true);
-        this.setBackground(new Color(30, 30, 30));
+        this.setBackground(new Color(25, 25, 25));
         this.tries = load("data/dtries.txt");
 
         this.neuronsBlue = new Neuron[2];
         for (int i = 0; i < 2; i++) {
             this.neuronsBlue[i] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 7, neuronsBlue);
+            this.neuronsBlue[i].load(i == 0 ? "data/blue_w_x.txt" : "data/blue_w_y.txt");
         }
-        this.neuronsBlue[0].load("data/blue_w_x.txt");
-        this.neuronsBlue[1].load("data/blue_w_y.txt");
 
         this.neuronsRed = new Neuron[2];
         for (int i = 0; i < 2; i++) {
             this.neuronsRed[i] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 1, neuronsRed);
+            this.neuronsRed[i].load(i == 0 ? "data/red_w_x.txt" : "data/red_w_y.txt");
         }
-        this.neuronsRed[0].load("data/red_w_x.txt");
-        this.neuronsRed[1].load("data/red_w_y.txt");
 
         this.startTime = System.currentTimeMillis();
-        this.timer = new Timer(16, this); // ~60 FPS
+        this.timer = new Timer(16, this);
         this.timer.start();
     }
 
@@ -49,39 +47,32 @@ public class Main extends JPanel implements ActionListener {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2d.setColor(new Color(30, 30, 30));
-        g2d.fillRect(0, 0, getWidth(), getHeight());
-
-        g2d.setStroke(new BasicStroke(5));
-        g2d.setColor(new Color(192, 57, 43));
-
-        g2d.drawLine(0, 0, getWidth(), 0);
+        g2d.setStroke(new BasicStroke(10));
+        g2d.setColor(new Color(200, 50, 50));
+        g2d.drawLine(0, 5, getWidth(), 5);
         g2d.drawLine(0, getHeight() - 5, getWidth(), getHeight() - 5);
 
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Consolas", Font.BOLD, 24));
-        g2d.drawString("TRIES: " + tries, 40, 50);
+        g2d.setFont(new Font("Consolas", Font.BOLD, 26));
+        g2d.drawString("TRIES: " + tries, 50, 60);
         long elapsed = System.currentTimeMillis() - startTime;
         double timeLeft = Math.max(0, (TIME_LIMIT_MS - elapsed) / 1000.0);
-        g2d.drawString("TIME: " + String.format("%.2f", timeLeft) + "s", 40, 90);
+        g2d.drawString("TIME: " + String.format("%.2f", timeLeft) + "s", 50, 100);
 
         g2d.setColor(new Color(46, 204, 113));
-        g2d.fillRect(GOAL_X, 0, 20, getHeight());
-        g2d.drawString("FINISH", GOAL_X - 20, 30);
+        g2d.fillRect(GOAL_X, 0, 25, getHeight());
 
-        g2d.setColor(new Color(100, 100, 100));
+        g2d.setColor(new Color(80, 80, 80));
         g2d.fillRect(wall.x, wall.y, wall.width, wall.height);
         g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(2));
+        g2d.setStroke(new BasicStroke(3));
         g2d.drawRect(wall.x, wall.y, wall.width, wall.height);
 
-        // 6. Синий агент
         g2d.setColor(new Color(52, 152, 219));
         g2d.fillRect((int) x1, (int) y1, size, size);
         g2d.setColor(Color.WHITE);
         g2d.drawRect((int) x1, (int) y1, size, size);
 
-        // 7. Красный агент
         g2d.setColor(new Color(231, 76, 60));
         g2d.fillRect((int) x2, (int) y2, size, size);
         g2d.setColor(Color.WHITE);
@@ -101,8 +92,8 @@ public class Main extends JPanel implements ActionListener {
         curNeurons[0].setInputs(new double[] { normX, normY, wallAhead });
         curNeurons[1].setInputs(new double[] { normX, normY, wallAhead });
 
-        double moveX = Math.max(0, curNeurons[0].predict() * 15.0);
-        double moveY = (curNeurons[1].predict() - 0.5) * 15.0;
+        double moveX = Math.max(0, curNeurons[0].predict() * 14.0);
+        double moveY = (curNeurons[1].predict() - 0.5) * 14.0;
 
         if (id == 1) {
             x1 += moveX;
@@ -121,78 +112,76 @@ public class Main extends JPanel implements ActionListener {
         Rectangle p1 = new Rectangle((int) x1, (int) y1, size, size);
         Rectangle p2 = new Rectangle((int) x2, (int) y2, size, size);
 
-        double reward1 = calculateReward(x1, y1, p1, 400);
-        double reward2 = calculateReward(x2, y2, p2, 700);
+        double r1 = calculateReward(x1, y1, p1, 300);
+        double r2 = calculateReward(x2, y2, p2, 700);
 
         boolean reset = false;
-        long currentTime = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         if (p1.intersects(wall)) {
-            reward1 = -40.0;
+            r1 = -40.0;
             x1 = 100;
-            y1 = 400;
-            reward2 += 20.0;
+            y1 = 300;
         }
         if (p2.intersects(wall)) {
-            reward2 = -40.0;
+            r2 = -40.0;
             x2 = 100;
             y2 = 700;
-            reward1 += 20.0;
         }
 
-        if (y1 < 0 || y1 > 1080 - size) {
-            reward1 = -20.0;
+        // ПРОВЕРКА КАСАНИЯ ВИЗУАЛЬНЫХ ГРАНИЦ (ВЕРХ И НИЗ)
+        if (y1 <= 10 || y1 >= getHeight() - size - 10) {
+            r1 = -25.0;
             x1 = 100;
-            y1 = 400;
+            y1 = 300;
         }
-        if (y2 < 0 || y2 > 1080 - size) {
-            reward2 = -20.0;
+        if (y2 <= 10 || y2 >= getHeight() - size - 10) {
+            r2 = -25.0;
             x2 = 100;
             y2 = 700;
         }
 
         if (p1.intersects(p2)) {
-            reward1 = -15.0;
-            reward2 = -15.0;
+            r1 = -15.0;
+            r2 = -15.0;
             reset = true;
         }
-
-        if (currentTime - startTime > TIME_LIMIT_MS || x1 >= GOAL_X || x2 >= GOAL_X)
+        if (now - startTime > TIME_LIMIT_MS || x1 >= GOAL_X || x2 >= GOAL_X)
             reset = true;
 
         neuronsBlue[0].train(0.5);
         neuronsBlue[1].train(1.0);
-        neuronsBlue[0].motivate(reward1, 0.9, x1 / 1920.0);
-        neuronsBlue[1].motivate(reward1, 0.9, y1 / 1080.0);
+        neuronsBlue[0].motivate(r1, 0.9, x1 / 1920.0);
+        neuronsBlue[1].motivate(r1, 0.9, y1 / 1080.0);
 
         neuronsRed[0].train(0.5);
         neuronsRed[1].train(1.0);
-        neuronsRed[0].motivate(reward2, 0.9, x2 / 1920.0);
-        neuronsRed[1].motivate(reward2, 0.9, y2 / 1080.0);
+        neuronsRed[0].motivate(r2, 0.9, x2 / 1920.0);
+        neuronsRed[1].motivate(r2, 0.9, y2 / 1080.0);
 
         if (reset) {
             save("data/dtries.txt", ++tries);
             if (x1 >= GOAL_X) {
-                applyFinalReward(neuronsBlue, neuronsRed, x1, y1, x2, y2);
+                applyFinal(neuronsBlue, neuronsRed, x1, y1, x2, y2);
             } else if (x2 >= GOAL_X) {
-                applyFinalReward(neuronsRed, neuronsBlue, x2, y2, x1, y1);
+                applyFinal(neuronsRed, neuronsBlue, x2, y2, x1, y1);
             }
             x1 = 100;
-            y1 = 400;
+            y1 = 300;
             x2 = 100;
             y2 = 700;
-            startTime = currentTime;
+            startTime = now;
             if (tries % 5 == 0)
                 saveWeights();
         }
         repaint();
     }
 
-    private void applyFinalReward(Neuron[] win, Neuron[] lose, double wx, double wy, double lx, double ly) {
-        win[0].motivate(150, 0.95, wx / 1920.0);
-        win[1].motivate(150, 0.95, wy / 1080.0);
-        lose[0].motivate(-150, 0.95, lx / 1920.0);
-        lose[1].motivate(-150, 0.95, ly / 1080.0);
+    private void applyFinal(Neuron[] w, Neuron[] l, double wx, double wy, double lx, double ly) {
+        w[0].motivate(200, 0.95, wx / 1920.0);
+        w[1].motivate(200, 0.95, wy / 1080.0);
+        l[0].motivate(-150, 0.95, lx / 1920.0);
+        l[1].motivate(-150, 0.95, ly / 1080.0);
     }
 
     private void saveWeights() {
@@ -202,40 +191,38 @@ public class Main extends JPanel implements ActionListener {
         neuronsRed[1].save("data/red_w_y.txt");
     }
 
-    private double calculateReward(double x, double y, Rectangle p, int targetY) {
+    private double calculateReward(double x, double y, Rectangle p, int ty) {
         if (p.intersects(wall))
-            return -30.0;
+            return -35.0;
         if (x >= GOAL_X)
-            return 200.0;
-        double progress = (x / 1920.0) * 8.0;
-        double yPenalty = Math.abs(y - targetY) / 500.0;
-        return progress - yPenalty;
+            return 250.0;
+        return ((x / 1920.0) * 10.0) - (Math.abs(y - ty) / 540.0);
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("AI Playground Full HD");
-        Main panel = new Main();
-        frame.add(panel);
-        frame.setSize(1920, 1080);
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
+        JFrame f = new JFrame("AI Playground Full HD");
+        Main p = new Main();
+        f.add(p);
+        f.setSize(1920, 1080);
+        f.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setVisible(true);
     }
 
-    static void save(String filename, int val) {
-        try (java.io.PrintWriter out = new java.io.PrintWriter(filename)) {
-            out.println(val);
-        } catch (java.io.IOException e) {
+    static void save(String fn, int v) {
+        try (java.io.PrintWriter o = new java.io.PrintWriter(fn)) {
+            o.println(v);
+        } catch (Exception e) {
         }
     }
 
-    static int load(String filename) {
-        java.io.File file = new java.io.File(filename);
-        if (!file.exists())
+    static int load(String fn) {
+        java.io.File f = new java.io.File(fn);
+        if (!f.exists())
             return 0;
-        try (java.util.Scanner sc = new java.util.Scanner(file)) {
-            return sc.hasNextInt() ? sc.nextInt() : 0;
-        } catch (java.io.IOException e) {
+        try (java.util.Scanner s = new java.util.Scanner(f)) {
+            return s.hasNextInt() ? s.nextInt() : 0;
+        } catch (Exception e) {
             return 0;
         }
     }
