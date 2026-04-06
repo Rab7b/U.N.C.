@@ -18,10 +18,10 @@ public class Neuron {
         this.weights = new double[inputSize * layerSize];
         for (int i = 0; i < inputSize; i++) {
             for (int j = 0; j < layerSize; j++) {
-                this.weights[i * layerSize + j] = Math.random() * 2 - 1;
+                this.weights[i * layerSize + j] = Math.random() * 0.4 - 0.2;
             }
         }
-        this.bias = 0.0;
+        this.bias = 0.1;
         this.inputs = inputs;
         this.peers = peers;
     }

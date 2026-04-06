@@ -6,34 +6,31 @@ import ai.Neuron;
 
 public class Main extends JPanel implements ActionListener {
 
-    private double x1 = 100, y1 = 300;
-    private Neuron[] neuronsBlue;
-    private double x2 = 100, y2 = 700;
-    private Neuron[] neuronsRed;
+    private double x1 = 100, y1 = 540;
+    private Neuron[] neurons;
 
     private int size = 60;
     private Timer timer;
     private int tries;
     private long startTime;
-    private final int TIME_LIMIT_MS = 25000;
+    private final int TIME_LIMIT_MS = 20000;
     private final int GOAL_X = 1800;
-    private final Rectangle wall = new Rectangle(1000, 350, 150, 400);
+
+    private final int WALL_X = 900;
+    private final int WALL_Y = 300;
+    private final int WALL_W = 40;
+    private final int WALL_H = 850;
 
     public Main() {
         this.setFocusable(true);
         this.setBackground(new Color(25, 25, 25));
         this.tries = load("data/dtries.txt");
 
-        this.neuronsBlue = new Neuron[2];
+        this.neurons = new Neuron[2];
         for (int i = 0; i < 2; i++) {
-            this.neuronsBlue[i] = new Neuron(3, new double[]{0.0, 0.0, 0.0}, 0.01, 7, neuronsBlue);
-            this.neuronsBlue[i].load(i == 0 ? "data/blue_w_x.txt" : "data/blue_w_y.txt");
-        }
 
-        this.neuronsRed = new Neuron[2];
-        for (int i = 0; i < 2; i++) {
-            this.neuronsRed[i] = new Neuron(3, new double[]{0.0, 0.0, 0.0}, 0.01, 1, neuronsRed);
-            this.neuronsRed[i].load(i == 0 ? "data/red_w_x.txt" : "data/red_w_y.txt");
+            this.neurons[i] = new Neuron(3, new double[] { 0.0, 0.0, 0.0 }, 0.01, 7, neurons);
+            this.neurons[i].importWeights(i == 0 ? "data/w_x.txt" : "data/w_y.txt");
         }
 
         this.startTime = System.currentTimeMillis();
@@ -51,6 +48,11 @@ public class Main extends JPanel implements ActionListener {
         g2d.fillRect(0, 0, getWidth(), 10);
         g2d.fillRect(0, getHeight() - 10, getWidth(), 10);
 
+        g2d.setColor(new Color(255, 165, 0));
+        g2d.fillRect(WALL_X, WALL_Y, WALL_W, WALL_H);
+        g2d.setColor(Color.WHITE);
+        g2d.drawRect(WALL_X, WALL_Y, WALL_W, WALL_H);
+
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Consolas", Font.BOLD, 26));
         g2d.drawString("TRIES: " + tries, 50, 60);
@@ -61,113 +63,75 @@ public class Main extends JPanel implements ActionListener {
         g2d.setColor(new Color(46, 204, 113));
         g2d.fillRect(GOAL_X, 0, 25, getHeight());
 
-        g2d.setColor(new Color(80, 80, 80));
-        g2d.fillRect(wall.x, wall.y, wall.width, wall.height);
-        g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawRect(wall.x, wall.y, wall.width, wall.height);
-
         g2d.setColor(new Color(52, 152, 219));
         g2d.fillRect((int) x1, (int) y1, size, size);
         g2d.setColor(Color.WHITE);
         g2d.drawRect((int) x1, (int) y1, size, size);
-
-        g2d.setColor(new Color(231, 76, 60));
-        g2d.fillRect((int) x2, (int) y2, size, size);
-        g2d.setColor(Color.WHITE);
-        g2d.drawRect((int) x2, (int) y2, size, size);
-    }
-
-    private void updateAgent(int id) {
-        double curX = (id == 1) ? x1 : x2;
-        double curY = (id == 1) ? y1 : y2;
-        Neuron[] curNeurons = (id == 1) ? neuronsBlue : neuronsRed;
-
-        double normX = curX / 1920.0;
-        double normY = curY / 1080.0;
-        Rectangle lookAhead = new Rectangle((int) curX + 70, (int) curY, size, size);
-        double wallAhead = lookAhead.intersects(wall) ? 1.0 : 0.0;
-
-        curNeurons[0].setInputs(new double[]{normX, normY, wallAhead});
-        curNeurons[1].setInputs(new double[]{normX, normY, wallAhead});
-
-        double moveX = Math.max(0, curNeurons[0].predict() * 14.0);
-        double moveY = (curNeurons[1].predict() - 0.5) * 14.0;
-
-        if (id == 1) { x1 += moveX; y1 += moveY; } 
-        else { x2 += moveX; y2 += moveY; }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        updateAgent(1);
-        updateAgent(2);
+        double normX = x1 / 1920.0;
+        double normY = y1 / 1080.0;
+        double distToGoal = (GOAL_X - x1) / 1920.0;
 
-        Rectangle p1 = new Rectangle((int) x1, (int) y1, size, size);
-        Rectangle p2 = new Rectangle((int) x2, (int) y2, size, size);
+        neurons[0].setInputs(new double[] { normX, normY, distToGoal });
+        neurons[1].setInputs(new double[] { normX, normY, distToGoal });
 
-        double r1 = calculateReward(x1, y1, p1, 300);
-        double r2 = calculateReward(x2, y2, p2, 700);
+        double moveX = neurons[0].predict() * 15.0; 
+        double moveY = neurons[1].predict() * 15.0;
+
+        x1 += moveX;
+        y1 += moveY;
+
+        Rectangle agent = new Rectangle((int) x1, (int) y1, size, size);
+        Rectangle wall = new Rectangle(WALL_X, WALL_Y, WALL_W, WALL_H);
+
+        double reward = (x1 / 1920.0) * 50.0;
+        double yDiff = Math.abs(y1 - 150);
+        reward -= (yDiff / 1080.0) * 20.0;
 
         boolean reset = false;
-        long now = System.currentTimeMillis();
 
-        if (p1.intersects(wall)) { r1 = -40.0; x1 = 100; y1 = 300; }
-        if (p2.intersects(wall)) { r2 = -40.0; x2 = 100; y2 = 700; }
+        if (agent.intersects(wall)) {
+            reward = -5000.0; 
+            reset = true;
+        }
 
-        if (y1 <= 10 || y1 >= getHeight() - size - 10) { r1 = -25.0; x1 = 100; y1 = 300; }
-        if (y2 <= 10 || y2 >= getHeight() - size - 10) { r2 = -25.0; x2 = 100; y2 = 700; }
+        if (y1 <= 10 || y1 >= getHeight() - size - 10 || x1 < 0) {
+            reward = -1000.0;
+            reset = true;
+        }
 
-        if (p1.intersects(p2)) { r1 = -15.0; r2 = -15.0; reset = true; }
-        if (now - startTime > TIME_LIMIT_MS || x1 >= GOAL_X || x2 >= GOAL_X) reset = true;
+        if (x1 >= GOAL_X) {
+            reward = 10000.0;
+            reset = true;
+        }
 
-        neuronsBlue[0].train(0.5);
-        neuronsBlue[1].train(1.0);
-        neuronsBlue[0].motivate(r1, 0.9, x1 / 1920.0);
-        neuronsBlue[1].motivate(r1, 0.9, y1 / 1080.0);
+        if (System.currentTimeMillis() - startTime > TIME_LIMIT_MS) {
+            reset = true;
+        }
 
-        neuronsRed[0].train(0.5);
-        neuronsRed[1].train(1.0);
-        neuronsRed[0].motivate(r2, 0.9, x2 / 1920.0);
-        neuronsRed[1].motivate(r2, 0.9, y2 / 1080.0);
+        neurons[0].motivate(reward, 0.9, neurons[0].predict());
+        neurons[1].motivate(reward, 0.9, neurons[1].predict());
 
         if (reset) {
             save("data/dtries.txt", ++tries);
-            if (x1 >= GOAL_X) {
-                applyFinal(neuronsBlue, neuronsRed, x1, y1, x2, y2);
-            } else if (x2 >= GOAL_X) {
-                applyFinal(neuronsRed, neuronsBlue, x2, y2, x1, y1);
+            x1 = 100; y1 = 540;
+            startTime = System.currentTimeMillis();
+            if (tries % 5 == 0) {
+                neurons[0].exportWeights("data/w_x.txt");
+                neurons[1].exportWeights("data/w_y.txt");
             }
-            x1 = 100; y1 = 300;
-            x2 = 100; y2 = 700;
-            startTime = now;
-            if (tries % 5 == 0) saveWeights();
         }
         repaint();
     }
 
-    private void applyFinal(Neuron[] w, Neuron[] l, double wx, double wy, double lx, double ly) {
-        w[0].motivate(200, 0.95, wx / 1920.0);
-        w[1].motivate(200, 0.95, wy / 1080.0);
-        l[0].motivate(-150, 0.95, lx / 1920.0);
-        l[1].motivate(-150, 0.95, ly / 1080.0);
-    }
-
-    private void saveWeights() {
-        neuronsBlue[0].save("data/blue_w_x.txt");
-        neuronsBlue[1].save("data/blue_w_y.txt");
-        neuronsRed[0].save("data/red_w_x.txt");
-        neuronsRed[1].save("data/red_w_y.txt");
-    }
-
-    private double calculateReward(double x, double y, Rectangle p, int ty) {
-        if (p.intersects(wall)) return -35.0;
-        if (x >= GOAL_X) return 250.0;
-        return ((x / 1920.0) * 10.0) - (Math.abs(y - ty) / 540.0);
-    }
-
     public static void main(String[] args) {
-        JFrame f = new JFrame("AI Warehouse Style Simulator");
+
+        System.loadLibrary("neuron_logic"); 
+        
+        JFrame f = new JFrame("AI_Playground_JNI_Edition");
         Main p = new Main();
         f.add(p);
         f.setSize(1920, 1080);
@@ -177,12 +141,16 @@ public class Main extends JPanel implements ActionListener {
     }
 
     static void save(String fn, int v) {
-        try (java.io.PrintWriter o = new java.io.PrintWriter(fn)) { o.println(v); } catch (Exception e) {}
+        try (java.io.PrintWriter o = new java.io.PrintWriter(fn)) {
+            o.println(v);
+        } catch (Exception e) {}
     }
 
     static int load(String fn) {
         java.io.File f = new java.io.File(fn);
         if (!f.exists()) return 0;
-        try (java.util.Scanner s = new java.util.Scanner(f)) { return s.hasNextInt() ? s.nextInt() : 0; } catch (Exception e) { return 0; }
+        try (java.util.Scanner s = new java.util.Scanner(f)) {
+            return s.hasNextInt() ? s.nextInt() : 0;
+        } catch (Exception e) { return 0; }
     }
 }

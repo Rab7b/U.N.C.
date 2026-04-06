@@ -19,7 +19,7 @@ extern "C"
     }
 
     double get_multithreaded_sum(const std::vector<double>& w) {
-        const int num_threads = ;
+        const int num_threads = std::thread::hardware_concurrency() > 0 ? std::thread::hardware_concurrency() : 4;
         int len = w.size();
         if (len < 1000) {
             double s = 0.0;
@@ -48,12 +48,11 @@ extern "C"
     }
 
     JNIEXPORT jdouble JNICALL Java_ai_Neuron_activate(JNIEnv *env, jclass cls, jdouble x) {
-        double ex = std::exp(x);
-        return ex / (ex + 1.0);
+        return std::tanh(x);
     }
 
     JNIEXPORT jdouble JNICALL Java_ai_Neuron_derivative(JNIEnv *env, jclass cls, jdouble x) {
-        return x * (1.0 - x);
+        return 1.0 - (x * x);
     }
 
     JNIEXPORT jdouble JNICALL Java_ai_Neuron_predict(JNIEnv *env, jobject obj) {
@@ -73,7 +72,7 @@ extern "C"
 
         double s = get_multithreaded_sum(w);
         s += b;
-        return 1.0 / (1.0 + exp(-s));
+        return std::tanh(s);
     }
 
     JNIEXPORT void JNICALL Java_ai_Neuron_train(JNIEnv *env, jobject obj, jdouble target) {
@@ -117,7 +116,7 @@ extern "C"
         double myOut = Java_ai_Neuron_predict(env, obj);
         double myError = target - myOut;
 
-        double derivative = 1.0 - (activatedValue * activatedValue);
+        double derivative = 1.0 - (myOut * myOut);
 
         double errorSignal = (peersA != NULL) ? (myError - collectiveError) : myError;
 
@@ -154,7 +153,7 @@ extern "C"
         }
 
         for (jsize i = 0; i < len; i++) {
-            w[i] = w[i] * big_l * bad_l;
+            w[i] = w[i] * (big_l != 0 ? (1.0 / big_l) : 1.0) * (bad_l != 0 ? (1.0 / bad_l) : 1.0);
         }
 
         env->SetDoubleArrayRegion(wA, 0, len, w.data());
@@ -183,10 +182,12 @@ extern "C"
         double trg = reward + gamma * state;
         double err = trg - out;
 
+        double deriv = 1.0 - (out * out);
+
         for (jsize i = 0; i < len; ++i) {
-            w[i] += lr * err;
+            w[i] += lr * err * deriv;
         }
-        b += lr * err;
+        b += lr * err * deriv;
 
         env->SetDoubleArrayRegion(wA, 0, len, w.data());
         env->SetDoubleField(obj, bF, b);
