@@ -11,6 +11,8 @@ public class Neuron {
     private double bias;
     private double learningRate = 0.0;
     private Neuron[] peers;
+    private double prediction;
+    private double selfWeight;
 
     public Neuron(int inputSize, double[] inputs, double learningRate, int layerSize, Neuron[] peers) {
         this.learningRate = learningRate;
@@ -18,12 +20,27 @@ public class Neuron {
         this.weights = new double[inputSize * layerSize];
         for (int i = 0; i < inputSize; i++) {
             for (int j = 0; j < layerSize; j++) {
-                this.weights[i * layerSize + j] = Math.random() * 0.4 - 0.2;
+                this.weights[i * layerSize + j] = (Math.random() * 2) - 1;;
             }
         }
         this.bias = 0.1;
         this.inputs = inputs;
         this.peers = peers;
+        selfWeight = (Math.random() * 2) - 1;
+    }
+
+    public Neuron(int inputSize, double[] inputs, double learningRate, int layerSize) {
+        this.learningRate = learningRate;
+        this.layerSize = layerSize;
+        this.weights = new double[inputSize * layerSize];
+        for (int i = 0; i < inputSize; i++) {
+            for (int j = 0; j < layerSize; j++) {
+                this.weights[i * layerSize + j] = (Math.random() * 2) - 1;;
+            }
+        }
+        this.bias = 0.1;
+        this.inputs = inputs;
+        selfWeight = (Math.random() * 2) - 1;
     }
 
     private static native double activate(double x);

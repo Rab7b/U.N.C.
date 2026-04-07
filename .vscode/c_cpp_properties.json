@@ -1,24 +1,24 @@
 {
-    "configurations": [
-        {
-            "name": "AMD_GPU_HIP",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "E:/Eclipse Adoptium/jdk-17.0.18.8-hotspot/include",
-                "E:/Eclipse Adoptium/jdk-17.0.18.8-hotspot/include/win32",
-                "C:/Program Files/AMD/ROCm/7.1/include"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "__HIP_PLATFORM_AMD__"
-            ],
-            "compilerPath": "C:/Program Files/AMD/ROCm/7.1/bin/hipcc.exe",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-clang-x64"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "windows-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "E:/Eclipse Adoptium/jdk-17.0.18.8-hotspot/include",
+        "E:/Eclipse Adoptium/jdk-17.0.18.8-hotspot/include/win32",
+        "C:/Program Files/AMD/ROCm/7.1/include"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE",
+        "__HIP_PLATFORM_AMD__"
+      ],
+      "compilerPath": "cl.exe",
+      "cStandard": "${default}",
+      "cppStandard": "${default}",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
 }
