@@ -176,4 +176,5 @@ public class Main extends JPanel {
         f.add(new Main());
         f.setVisible(true);
     }
-}
+} 
+
