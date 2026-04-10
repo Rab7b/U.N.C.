@@ -89,11 +89,11 @@ extern "C"
             s += w[i] * ins[i];
         }
 
-        if (std::isnan(s) || std::isinf(s))
+        if (std::isnan(s) || std::isinf(s)){
             s = 0.0;
+        }
         double current_output = std::tanh(s);
 
-        // Логика самоанализа (Reward System)
         jfieldID self_pID = env->GetFieldID(cls, "prediction", "D");
         jfieldID self_wID = env->GetFieldID(cls, "selfWeight", "D");
 
@@ -104,8 +104,9 @@ extern "C"
         if (diff < SPARTAN_LIMIT)
         {
             sw += (SPARTAN_LIMIT - diff) * PI;
-            if (sw > 10.0)
+            if (sw > 10.0){
                 sw = 10.0;
+            }
             env->SetDoubleField(obj, self_wID, sw);
         }
 
